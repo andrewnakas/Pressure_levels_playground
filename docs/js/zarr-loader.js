@@ -18,12 +18,24 @@ export class ZarrLoader {
         console.log('Initializing Zarr loader...');
 
         try {
-            // Fetch metadata
-            const metadataPath = '../data/metadata.json';
-            const response = await fetch(metadataPath);
+            // Fetch metadata (try multiple paths for flexibility)
+            const metadataPaths = ['data/metadata.json', '../data/metadata.json'];
 
-            if (!response.ok) {
-                throw new Error(`Failed to fetch metadata: ${response.statusText}`);
+            let response = null;
+            for (const path of metadataPaths) {
+                try {
+                    response = await fetch(path);
+                    if (response.ok) {
+                        console.log(`Metadata found at: ${path}`);
+                        break;
+                    }
+                } catch (e) {
+                    console.log(`Trying next path after error: ${e.message}`);
+                }
+            }
+
+            if (!response || !response.ok) {
+                throw new Error(`Failed to fetch metadata from any path`);
             }
 
             this.metadata = await response.json();

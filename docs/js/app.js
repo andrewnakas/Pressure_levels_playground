@@ -38,8 +38,9 @@ class PressureVisualizationApp {
             // Show loading overlay
             this.showLoading(true);
 
-            // Initialize Zarr loader
-            this.zarrLoader = new ZarrLoader('../data/pressure_data.zarr');
+            // Initialize Zarr loader (try multiple paths)
+            const zarrPaths = ['data/pressure_data.zarr', '../data/pressure_data.zarr'];
+            this.zarrLoader = new ZarrLoader(zarrPaths[0]);
             this.metadata = await this.zarrLoader.initialize();
 
             // Initialize map

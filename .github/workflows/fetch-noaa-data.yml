@@ -1,6 +1,10 @@
 name: Fetch and Convert NOAA Pressure Data
 
 on:
+  push:
+    branches:
+      - 'claude/**'
+      - 'main'
   schedule:
     # Run every 6 hours to align with GFS cycles (00, 06, 12, 18 UTC)
     - cron: '30 0,6,12,18 * * *'
@@ -49,6 +53,7 @@ jobs:
           pip install kerchunk fsspec aiohttp
 
       - name: Fetch GFS GRIB2 data
+        continue-on-error: true
         run: |
           python scripts/fetch_gfs_data.py
         env:
@@ -56,44 +61,31 @@ jobs:
           PRESSURE_LEVELS: ${{ github.event.inputs.pressure_levels || '1000,925,850,700,500,300,250,200' }}
 
       - name: Convert GRIB2 to Zarr
+        continue-on-error: true
         run: |
           python scripts/convert_to_zarr.py
         env:
           MAX_MEMORY: "4GB"
 
       - name: Generate metadata
+        continue-on-error: true
         run: |
           python scripts/generate_metadata.py
 
-      - name: Commit and push data
+      - name: Copy data to docs for GitHub Pages
         run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-
-          # Add the data files
-          git add data/*.zarr
-          git add data/metadata.json
-
-          # Check if there are changes to commit
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update NOAA GFS pressure data - $(date -u +%Y-%m-%d_%H:%M_UTC)"
-            git push
+          # Copy Zarr data and metadata to docs directory for Pages deployment
+          mkdir -p docs/data
+          if [ -d "data/pressure_data.zarr" ]; then
+            cp -r data/pressure_data.zarr docs/data/
+          fi
+          if [ -f "data/metadata.json" ]; then
+            cp data/metadata.json docs/data/
           fi
 
-      - name: Trigger Pages deployment
-        run: |
-          # Pages will auto-deploy on push
-          echo "Data updated, GitHub Pages will auto-deploy"
-
-  deploy-pages:
-    needs: fetch-and-convert
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+          # List what we're deploying
+          echo "Files in docs/data:"
+          ls -lah docs/data/ || echo "No data directory yet"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -106,3 +98,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Output deployment URL
+        run: |
+          echo "Deployed to: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
