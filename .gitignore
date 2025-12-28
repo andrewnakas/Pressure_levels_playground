@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Data files (downloaded GRIB2 files are large)
+data/grib2/*.grib2
+data/grib2/*.idx
+
+# Temporary files
+*.tmp
+*.log
+.cache/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# GRIB index files
+*.index
+*.idx
+
+# OS
+Thumbs.db
+.DS_Store
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Keep directory structure but ignore contents
+data/grib2/.gitkeep
+!data/grib2/.gitkeep

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOAA Pressure Level Visualization</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <h1>NOAA GFS Pressure Level Data Viewer</h1>
+            <p class="subtitle">Interactive visualization of atmospheric pressure data</p>
+        </header>
+
+        <!-- Main container -->
+        <div id="main-container">
+            <!-- Control Panel -->
+            <div id="control-panel">
+                <div class="control-section">
+                    <h3>Data Information</h3>
+                    <div id="data-info">
+                        <p><strong>Source:</strong> <span id="data-source">Loading...</span></p>
+                        <p><strong>Forecast Cycle:</strong> <span id="forecast-cycle">Loading...</span></p>
+                        <p><strong>Last Updated:</strong> <span id="last-updated">Loading...</span></p>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Pressure Level</h3>
+                    <select id="level-select" class="control-input">
+                        <option value="">Loading...</option>
+                    </select>
+                    <div id="level-info" class="info-text"></div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Variable</h3>
+                    <select id="variable-select" class="control-input">
+                        <option value="">Loading...</option>
+                    </select>
+                    <div id="variable-info" class="info-text"></div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Time</h3>
+                    <div id="time-controls">
+                        <input type="range" id="time-slider" class="control-input" min="0" max="0" value="0" step="1">
+                        <div id="time-display">--</div>
+                        <div class="button-group">
+                            <button id="play-button" class="control-button">▶ Play</button>
+                            <button id="stop-button" class="control-button" disabled>⏸ Pause</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Visualization Options</h3>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="show-contours" checked>
+                            Show Contour Lines
+                        </label>
+                        <label>
+                            <input type="checkbox" id="show-fills" checked>
+                            Show Color Fill
+                        </label>
+                        <label>
+                            <input type="checkbox" id="show-labels">
+                            Show Labels
+                        </label>
+                    </div>
+
+                    <div class="contour-config">
+                        <label for="contour-interval">Contour Interval:</label>
+                        <input type="number" id="contour-interval" class="control-input" value="4" min="1" max="20" step="1">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Color Scale</h3>
+                    <div id="color-scale-container">
+                        <canvas id="color-scale" width="250" height="30"></canvas>
+                        <div id="color-scale-labels"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div id="map-container">
+                <div id="map"></div>
+                <div id="loading-overlay" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>
+                Data source: NOAA GFS 0.25° Global Forecast System |
+                <a href="https://github.com/andrewnakas/Pressure_levels_playground" target="_blank">GitHub Repository</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/zarr@0.5.1/dist/zarr.umd.js"></script>
+
+    <!-- Custom Scripts -->
+    <script type="module" src="js/zarr-loader.js"></script>
+    <script type="module" src="js/visualization.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

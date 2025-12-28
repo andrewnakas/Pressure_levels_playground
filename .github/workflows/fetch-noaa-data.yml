@@ -1,0 +1,108 @@
+name: Fetch and Convert NOAA Pressure Data
+
+on:
+  schedule:
+    # Run every 6 hours to align with GFS cycles (00, 06, 12, 18 UTC)
+    - cron: '30 0,6,12,18 * * *'
+  workflow_dispatch:
+    inputs:
+      forecast_cycle:
+        description: 'Forecast cycle (00, 06, 12, 18)'
+        required: false
+        default: 'latest'
+      pressure_levels:
+        description: 'Comma-separated pressure levels (hPa)'
+        required: false
+        default: '1000,925,850,700,500,300,250,200'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  fetch-and-convert:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeccodes-dev libeccodes-tools
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install xarray zarr cfgrib dask netcdf4 s3fs
+          pip install numcodecs requests numpy pandas
+          pip install kerchunk fsspec aiohttp
+
+      - name: Fetch GFS GRIB2 data
+        run: |
+          python scripts/fetch_gfs_data.py
+        env:
+          FORECAST_CYCLE: ${{ github.event.inputs.forecast_cycle || 'latest' }}
+          PRESSURE_LEVELS: ${{ github.event.inputs.pressure_levels || '1000,925,850,700,500,300,250,200' }}
+
+      - name: Convert GRIB2 to Zarr
+        run: |
+          python scripts/convert_to_zarr.py
+        env:
+          MAX_MEMORY: "4GB"
+
+      - name: Generate metadata
+        run: |
+          python scripts/generate_metadata.py
+
+      - name: Commit and push data
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+          # Add the data files
+          git add data/*.zarr
+          git add data/metadata.json
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update NOAA GFS pressure data - $(date -u +%Y-%m-%d_%H:%M_UTC)"
+            git push
+          fi
+
+      - name: Trigger Pages deployment
+        run: |
+          # Pages will auto-deploy on push
+          echo "Data updated, GitHub Pages will auto-deploy"
+
+  deploy-pages:
+    needs: fetch-and-convert
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
