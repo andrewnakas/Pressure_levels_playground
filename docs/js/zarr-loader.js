@@ -109,34 +109,12 @@ export class ZarrLoader {
      * For GitHub Pages, we might need to pre-generate JSON files
      */
     async loadVariableData(variable, timeIndex, levelIndex) {
-        // Option 1: Load pre-generated GeoJSON
-        try {
-            const jsonPath = `../data/geojson/${variable}_t${timeIndex}_l${levelIndex}.json`;
-            const response = await fetch(jsonPath);
-
-            if (response.ok) {
-                const data = await response.json();
-                return {
-                    data: data.values,
-                    lat: data.lat,
-                    lon: data.lon,
-                    shape: [data.lat.length, data.lon.length],
-                    coords: {
-                        lat: data.lat,
-                        lon: data.lon
-                    }
-                };
-            }
-        } catch (error) {
-            console.log('Pre-generated JSON not found, trying direct Zarr access...');
-        }
-
-        // Option 2: Try loading via zarr.js (if available)
+        // Try loading via zarr.js (if available)
         if (typeof zarr !== 'undefined') {
             return await this.loadViaZarrJS(variable, timeIndex, levelIndex);
         }
 
-        throw new Error('No data loading method available');
+        throw new Error('Real NOAA data not available - zarr.js library required');
     }
 
     /**
@@ -197,49 +175,6 @@ export class ZarrLoader {
         }
     }
 
-    /**
-     * Generate sample data for testing when actual Zarr data is not available
-     */
-    generateSampleData(variable, timeIndex, levelIndex) {
-        console.log('Generating sample data for testing...');
-
-        // Create synthetic pressure field
-        const latCount = 181; // -90 to 90, every 1 degree
-        const lonCount = 361; // -180 to 180, every 1 degree
-
-        const lat = Array.from({length: latCount}, (_, i) => 90 - i);
-        const lon = Array.from({length: lonCount}, (_, i) => -180 + i);
-
-        const data = new Float32Array(latCount * lonCount);
-
-        // Generate synthetic pressure pattern
-        const levelValue = this.metadata?.levels?.[levelIndex] || 500;
-
-        for (let i = 0; i < latCount; i++) {
-            for (let j = 0; j < lonCount; j++) {
-                const latRad = (lat[i] * Math.PI) / 180;
-                const lonRad = (lon[j] * Math.PI) / 180;
-
-                // Create wave pattern based on pressure level
-                const base = levelValue;
-                const variation = base * 0.1;
-
-                const value = base +
-                    variation * Math.sin(3 * latRad) * Math.cos(2 * lonRad) +
-                    variation * 0.5 * Math.sin(lonRad + timeIndex * 0.2);
-
-                data[i * lonCount + j] = value;
-            }
-        }
-
-        return {
-            data: data,
-            lat: lat,
-            lon: lon,
-            shape: [latCount, lonCount],
-            coords: { lat, lon }
-        };
-    }
 
     /**
      * Clear cache

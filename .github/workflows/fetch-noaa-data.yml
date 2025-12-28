@@ -53,7 +53,6 @@ jobs:
           pip install kerchunk fsspec aiohttp
 
       - name: Fetch GFS GRIB2 data
-        continue-on-error: true
         run: |
           python scripts/fetch_gfs_data.py
         env:
@@ -61,16 +60,26 @@ jobs:
           PRESSURE_LEVELS: ${{ github.event.inputs.pressure_levels || '1000,925,850,700,500,300,250,200' }}
 
       - name: Convert GRIB2 to Zarr
-        continue-on-error: true
         run: |
           python scripts/convert_to_zarr.py
         env:
           MAX_MEMORY: "4GB"
 
       - name: Generate metadata
-        continue-on-error: true
         run: |
           python scripts/generate_metadata.py
+
+      - name: Verify data exists
+        run: |
+          if [ ! -d "data/pressure_data.zarr" ]; then
+            echo "ERROR: Zarr data not created"
+            exit 1
+          fi
+          if [ ! -f "data/metadata.json" ]; then
+            echo "ERROR: Metadata not created"
+            exit 1
+          fi
+          echo "Data verification successful"
 
       - name: Copy data to docs for GitHub Pages
         run: |

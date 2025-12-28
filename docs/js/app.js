@@ -59,10 +59,8 @@ class PressureVisualizationApp {
 
         } catch (error) {
             console.error('Initialization error:', error);
-            this.showError('Failed to initialize application. Using sample data for demonstration.');
-
-            // Try to continue with sample data
-            this.useSampleData();
+            this.showError('Failed to load NOAA data. Real atmospheric pressure data is not yet available. Please run the GitHub Actions workflow to fetch data.');
+            this.showLoading(false);
         }
     }
 
@@ -216,22 +214,12 @@ class PressureVisualizationApp {
 
             console.log(`Loading: variable=${this.state.currentVariable}, time=${this.state.currentTime}, level=${this.state.currentLevel}`);
 
-            // Load data
-            let dataResult;
-            try {
-                dataResult = await this.zarrLoader.loadVariable(
-                    this.state.currentVariable,
-                    this.state.currentTime,
-                    this.state.currentLevel
-                );
-            } catch (error) {
-                console.warn('Failed to load real data, using sample data:', error);
-                dataResult = this.zarrLoader.generateSampleData(
-                    this.state.currentVariable,
-                    this.state.currentTime,
-                    this.state.currentLevel
-                );
-            }
+            // Load data - only real NOAA data
+            const dataResult = await this.zarrLoader.loadVariable(
+                this.state.currentVariable,
+                this.state.currentTime,
+                this.state.currentLevel
+            );
 
             // Generate color scale
             const min = Math.min(...dataResult.data);
@@ -364,42 +352,29 @@ class PressureVisualizationApp {
      * Show error message
      */
     showError(message) {
-        alert(message);
-    }
-
-    /**
-     * Use sample data for demonstration
-     */
-    useSampleData() {
-        this.metadata = {
-            source: 'Sample Data (Demo)',
-            created: new Date().toISOString(),
-            forecast_cycle: new Date().toISOString(),
-            levels: [1000, 925, 850, 700, 500, 300, 250, 200],
-            time: Array.from({length: 9}, (_, i) => {
-                const date = new Date();
-                date.setHours(date.getHours() + i * 3);
-                return date.toISOString();
-            }),
-            time_range: {
-                count: 9
-            },
-            variables: {
-                'pressure': {
-                    attrs: {
-                        long_name: 'Pressure',
-                        units: 'hPa'
-                    }
-                }
-            }
-        };
-
-        this.state.currentVariable = 'pressure';
-
-        this.initializeMap();
-        this.initializeUI();
-        this.loadAndVisualize();
-        this.showLoading(false);
+        // Create error overlay
+        const loadingOverlay = document.getElementById('loading-overlay');
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.innerHTML = `
+            <div style="max-width: 600px; text-align: center; padding: 2rem;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                <h2 style="color: #dc2626; margin-bottom: 1rem;">Data Not Available</h2>
+                <p style="margin-bottom: 1.5rem; color: #374151;">${message}</p>
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; text-align: left;">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">To fetch real NOAA data:</h3>
+                    <ol style="margin-left: 1.5rem; font-size: 0.9rem; color: #6b7280;">
+                        <li>Go to the <strong>Actions</strong> tab in your repository</li>
+                        <li>Select <strong>Fetch and Convert NOAA Pressure Data</strong></li>
+                        <li>Click <strong>Run workflow</strong></li>
+                        <li>Wait 5-10 minutes for data processing</li>
+                        <li>Refresh this page</li>
+                    </ol>
+                </div>
+                <p style="margin-top: 1rem; font-size: 0.85rem; color: #9ca3af;">
+                    The workflow will also run automatically every 6 hours
+                </p>
+            </div>
+        `;
     }
 }
 
